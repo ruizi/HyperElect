@@ -34,11 +34,22 @@ public class TopologyInitialize {
 
     public ArrayList<MyNode> buildingUpNodes() {
         ArrayList<MyNode> nodes = new ArrayList<>();
+        ArrayList<int[]> nodesLocations = new ArrayList<>();
+        if(dimension>=1&&dimension<=4){
+            nodesLocations = nodeLocationAccordingToDimension();
+        }
         String padding = "%" + dimension + "s";
+
+
         for (int i = 0; i < nodeNum; i++) {
             String nodeBinaryId = String.format(padding, Integer.toBinaryString(i)).replace(' ', '0');
             int nodeValue = generateRandomNodeValue();
-            nodes.add(new MyNode(i, nodeBinaryId,nodeValue));
+            if(!nodesLocations.isEmpty()){
+                nodes.add(new MyNode(i, nodeBinaryId,nodeValue,nodesLocations.get(i)[0],nodesLocations.get(i)[1]));
+            }else {
+                nodes.add(new MyNode(i, nodeBinaryId,nodeValue));
+            }
+
         }
         return nodes;
     }
@@ -66,5 +77,53 @@ public class TopologyInitialize {
             }
         }
         return links;
+    }
+
+    public ArrayList<int[]> nodeLocationAccordingToDimension(){
+        ArrayList<int[]> nodeLocations=new ArrayList<>();
+        if(this.dimension==1){
+            nodeLocations.add(new int[]{100, 100});
+            nodeLocations.add(new int[]{200, 100});
+        } else if(this.dimension==2){
+            nodeLocations.add(new int[]{100, 200});
+            nodeLocations.add(new int[]{200, 200});
+            nodeLocations.add(new int[]{100, 100});
+            nodeLocations.add(new int[]{200, 100});
+        }else if (this.dimension==3){
+
+            nodeLocations.add(new int[]{100, 100});
+            nodeLocations.add(new int[]{200, 100});
+            nodeLocations.add(new int[]{120, 80});
+            nodeLocations.add(new int[]{220, 80});
+
+            nodeLocations.add(new int[]{100, 200});
+            nodeLocations.add(new int[]{200, 200});
+            nodeLocations.add(new int[]{120, 180});
+            nodeLocations.add(new int[]{220, 180});
+
+        }else if(this.dimension==4){
+
+            nodeLocations.add(new int[]{100, 100});
+            nodeLocations.add(new int[]{200, 100});
+            nodeLocations.add(new int[]{120, 80});
+            nodeLocations.add(new int[]{220, 80});
+
+            nodeLocations.add(new int[]{100, 200});
+            nodeLocations.add(new int[]{200, 200});
+            nodeLocations.add(new int[]{120, 180});
+            nodeLocations.add(new int[]{220, 180});
+
+            nodeLocations.add(new int[]{300, 260});
+            nodeLocations.add(new int[]{400, 260});
+            nodeLocations.add(new int[]{320, 240});
+            nodeLocations.add(new int[]{420, 240});
+
+            nodeLocations.add(new int[]{300, 360});
+            nodeLocations.add(new int[]{400, 360});
+            nodeLocations.add(new int[]{320, 340});
+            nodeLocations.add(new int[]{420, 340});
+
+        }
+        return nodeLocations;
     }
 }

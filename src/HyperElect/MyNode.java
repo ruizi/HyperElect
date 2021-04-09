@@ -18,9 +18,18 @@ public class MyNode extends Node {
     private ArrayList<Integer> nextDuelist;
     private ArrayList<Message> Delayed = new ArrayList<>();
     private ArrayList<Integer> delay = new ArrayList<>();
-    static private int messageSent = 0;
-    static int stopNodeNum = 0;
+    volatile static int messageSent = 0;
+    volatile static int stopNodeNum = 0;
 
+
+    public MyNode(int nodeId, String nodeBinaryId, int nodeValue,int axis_X,int axis_Y) {
+        this.setID(nodeId);
+        this.nodeBinaryId = nodeBinaryId;
+        this.nodeValue = nodeValue;
+        this.topologyDimension = nodeBinaryId.length();
+        this.setLocation(axis_X,axis_Y);
+        this.setColor(Color.black);
+    }
 
     public MyNode(int nodeId, String nodeBinaryId, int nodeValue) {
         this.setID(nodeId);
@@ -50,6 +59,7 @@ public class MyNode extends Node {
         send(duelistNode, new Message(new MyMatchingMsg("Match", this.nodeValue, this.stage, Source, Dest)));
         messageSent++;
 
+        this.setColor(Color.WHITE);
         this.state = "DUELIST";
     }
 
@@ -67,6 +77,8 @@ public class MyNode extends Node {
             case "DEFEATED":
                 DEFEATED(message);
                 break;
+//            case "FOLLOWER":
+//                FOLLOWER(message);
         }
     }
 
@@ -81,6 +93,7 @@ public class MyNode extends Node {
         send(duelistNode, new Message(new MyMatchingMsg("Match", this.nodeValue, this.stage, Source, Dest)));
         messageSent++;
 
+        this.setColor(Color.WHITE);
         this.state = "DUELIST";
         System.out.println(this.getID() + " become a DUELIST!");
         if (messageReceived.getStage() == this.stage) {
@@ -92,20 +105,28 @@ public class MyNode extends Node {
 
     public void DUELIST(Message message) {
         MyMatchingMsg messageReceived = (MyMatchingMsg) message.getContent();
-        if (this.stage == messageReceived.getStage()) {
+        if(messageReceived.getMessage().equals("Notify")){
+            ReceivingNotifyMessage(message);
+        } else if (this.stage == messageReceived.getStage()) {
             ProcessMessage(messageReceived);
         } else {
             DelayMessage(message);
         }
     }
 
+    private void ReceivingNotifyMessage(Message message) {
+        HyperFlood(message);
+        this.setColor(Color.ORANGE);
+        this.state = "FOLLOWER";
+        stopNodeNum++;
+        System.out.println(this.getID() + " become a follower!");
+        System.out.println("Now " + this.getID() + " ends, the overall messages are " + messageSent + " || stop number: " + stopNodeNum);
+    }
+
     public void DEFEATED(Message message) {
         MyMatchingMsg messageReceived = (MyMatchingMsg) message.getContent();
         if (messageReceived.getMessage().equals("Notify")) { //if receiving the "notify" msg, it means the topology already has a leader
-            HyperFlood(message);
-            this.state = "FOLLOWER";
-            System.out.println(this.getID() + " become a follower!");
-            this.onStop();
+            ReceivingNotifyMessage(message);
         } else {
             if (messageReceived.getDest().isEmpty()) { //if the msg dest
                 System.out.println("the nextDueList is " + this.nextDuelist);
@@ -122,14 +143,33 @@ public class MyNode extends Node {
         }
     }
 
+//    public void FOLLOWER(Message message){
+//        MyMatchingMsg messageReceived = (MyMatchingMsg) message.getContent();
+//
+//        if (messageReceived.getDest().isEmpty()) { //if the msg dest
+//            System.out.println("the nextDueList is " + this.nextDuelist);
+//            messageReceived.addDest(this.nextDuelist);
+//        }
+//
+//        int targetLinkDimension = messageReceived.getDest().get(0);
+//        messageReceived.removeDestByIndex(0);
+//        messageReceived.addSource(targetLinkDimension);
+//
+//        MyNode targetNode = mappingLinkDimensionWithNodeObject(targetLinkDimension);
+//        send(targetNode, new Message(messageReceived));
+//        messageSent++;
+//    }
+
     public void ProcessMessage(MyMatchingMsg messageReceived) {
         if (messageReceived.getNodeValue() > this.nodeValue) {
             if (this.stage == topologyDimension) {
                 sendAll(new Message(new MyMatchingMsg("Notify")));
                 messageSent = messageSent + this.getNeighbors().size();
+                this.setColor(Color.GREEN);
                 this.state = "LEADER";
                 System.out.println(this.getID() + " become a LEADER!");
-                this.onStop();
+                stopNodeNum++;
+                System.out.println("Now " + this.getID() + " ends, the overall messages are " + messageSent + " || stop number: " + stopNodeNum);
             } else {
                 stage += 1;
                 ArrayList<Integer> source = new ArrayList<>();
@@ -148,6 +188,7 @@ public class MyNode extends Node {
 
             CHECK_ALL();
 
+            this.setColor(Color.RED);
             this.state = "DEFEATED";
             System.out.println(this.getID() + " was DEFEATED!");
         }
@@ -203,6 +244,11 @@ public class MyNode extends Node {
 
             if (myMatchingMsg.getMessage().equals("Notify")) {
                 HyperFlood(delayedMessage);
+                this.setColor(Color.ORANGE);
+                this.state = "FOLLOWER";
+                System.out.println(this.getID() + " become a follower!");
+                stopNodeNum++;
+                System.out.println("Now " + this.getID() + " ends, the overall messages are " + messageSent + " || stop number: " + stopNodeNum);
             } else {
                 if (myMatchingMsg.getDest().isEmpty()) {
                     myMatchingMsg.addDest(this.nextDuelist);
@@ -302,11 +348,8 @@ public class MyNode extends Node {
         return compressedSequence;
     }
 
-    @Override
-    public void onStop() {
-        super.onStop();
-        stopNodeNum++;
-        System.out.println("Now " + this.getID() + " ends, the overall messages are " + messageSent + " || stop number: " + stopNodeNum);
-    }
 
+    public String getState() {
+        return state;
+    }
 }
